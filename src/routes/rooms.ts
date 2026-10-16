@@ -37,7 +37,8 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
 
 
 
-    typed.get('/:id', {
+    typed.get('/:id', 
+    {
         schema: {
             params: Type.Object({
                 id: Type.String({minLength: 1})
@@ -45,13 +46,13 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
             response: {
                 200: Room,
                 404: Type.Object({
-                    error: Type.String
+                    error: Type.String()
                 })
             }
         }
     }, async(request, reply)=> {
-        const {} = request.params
-        const room = rooms.find((r)=>r.id === Number(request.params.id))
+        const {id} = request.params
+        const room = rooms.find((r)=>r.id === Number(id))
         if (!room) return reply.code(404).send({error: 'Room not found'})
         return room
     })
@@ -88,5 +89,26 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(200).send(rooms)
     })
 
-    // app.patch<{Body: {id: string; name: string; capacity: number}}>('/')
+    typed.patch('/:id',{
+        schema: {
+            params: Type.Object({
+                id: Type.String({ minLength: 1})
+            }),
+            body: Type.Partial(RoomBody),
+            response: {
+                200: Room,
+                404: Type.Object({
+                    error: Type.String()
+                })
+            }
+        }
+    }, async(request, reply) =>{
+        const {id} = request.params
+        const room = rooms.find((r)=>r.id === Number(id))
+        if (!room) {
+            return reply.code(404).send({error: 'Room not found'})
+        }
+        Object.assign(room, request.body)
+        return room
+    })
 }
