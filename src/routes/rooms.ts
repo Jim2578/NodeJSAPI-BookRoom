@@ -1,7 +1,7 @@
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import {Type} from "typebox"
 import type { FastifyPluginAsync } from "fastify";
-import { RoomBody, RoomType } from "../schema/room.ts"
+import { Room, RoomBody, RoomType } from "../schema/room.ts"
 import { error } from "node:console";
 
 type Room = { id: number; name: string; capacity: number}
@@ -20,6 +20,9 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
         schema: { 
             querystring: Type.Object({
                 minCapacity: Type.Optional(Type.Integer({minimum:1}))
+            },
+            {
+                additionalProperties: false
             })
         }
     }, async (request, response) => {
@@ -32,12 +35,33 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
     })
     // app.get('/', async => rooms)
 
-    app.get<{Params: {id: string} }>('/:id', async (request, reply)=>{
 
+
+    typed.get('/:id', {
+        schema: {
+            params: Type.Object({
+                id: Type.String({minLength: 1})
+            }),
+            response: {
+                200: Room,
+                404: Type.Object({
+                    error: Type.String
+                })
+            }
+        }
+    }, async(request, reply)=> {
+        const {} = request.params
         const room = rooms.find((r)=>r.id === Number(request.params.id))
         if (!room) return reply.code(404).send({error: 'Room not found'})
         return room
     })
+
+    // app.get<{Params: {id: string} }>('/:id', async (request, reply)=>{
+
+    //     const room = rooms.find((r)=>r.id === Number(request.params.id))
+    //     if (!room) return reply.code(404).send({error: 'Room not found'})
+    //     return room
+    // })
     typed.post('/', {schema: { body: RoomBody }}, async(request, reply)=>{
         const {capacity, name} = request.body
         const room: RoomType = {
