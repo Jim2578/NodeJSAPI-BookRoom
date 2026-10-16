@@ -1,6 +1,7 @@
 import { Type, TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { FastifyPluginAsync } from "fastify";
 import { Booking, BookingBody } from "../schema/booking.ts";
+import { HttpError } from "../plugins/errors.ts";
 
 
 type Booking = { 
@@ -37,7 +38,7 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
     }, async(request, reply)=> {
         const {id} = request.params
         const booking = bookings.find((r)=>r.id === Number(id))
-        if (!booking) return reply.code(404).send({error: 'Booking not found'})
+        if (!booking) throw new HttpError(404, 'Booking not found')
         return booking
     })
 
@@ -57,7 +58,7 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
 
     app.delete<{Params: {id: string}}>('/:id', async(request, reply)=>{
         const booking = bookings.find((r)=>r.id === Number(request.params.id))
-        if (!booking) return reply.code(404).send({error: "Booking not found"})
+        if (!booking) throw new HttpError(404, 'Booking not found')
         bookings = bookings.filter((r)=>r.id !== Number(request.params.id))
         return reply.code(200).send(booking)
     })
@@ -79,7 +80,7 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
         const {id} = request.params
         const booking = bookings.find((r)=>r.id === Number(id))
         if (!booking) {
-            return reply.code(404).send({error: 'Booking not found'})
+            throw new HttpError(404, 'Booking not found')
         }
         Object.assign(booking, request.body)
         return booking

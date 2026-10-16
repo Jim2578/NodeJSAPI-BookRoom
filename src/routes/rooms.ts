@@ -3,6 +3,7 @@ import {Type} from "typebox"
 import type { FastifyPluginAsync } from "fastify";
 import { Room, RoomBody, RoomType } from "../schema/room.ts"
 import { error } from "node:console";
+import { HttpError } from "../plugins/errors.ts";
 
 type Room = { id: number; name: string; capacity: number}
 
@@ -53,7 +54,8 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
     }, async(request, reply)=> {
         const {id} = request.params
         const room = rooms.find((r)=>r.id === Number(id))
-        if (!room) return reply.code(404).send({error: 'Room not found'})
+        if (!room) throw new HttpError(404, 'Room not found')
+        // return reply.code(404).send({error: 'Room not found'})
         return room
     })
 
@@ -84,7 +86,7 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
 
     app.delete<{Params: {id: string}}>('/:id', async(request, reply)=>{
         const room = rooms.find((r)=>r.id === Number(request.params.id))
-        if (!room) return reply.code(404).send({error: "Room not found"})
+        if (!room) throw new HttpError(404, 'Room not found')
         rooms = rooms.filter((r)=>r.id !== Number(request.params.id))
         return reply.code(200).send(rooms)
     })
@@ -106,7 +108,7 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
         const {id} = request.params
         const room = rooms.find((r)=>r.id === Number(id))
         if (!room) {
-            return reply.code(404).send({error: 'Room not found'})
+            throw new HttpError(404, 'Room not found')
         }
         Object.assign(room, request.body)
         return room
