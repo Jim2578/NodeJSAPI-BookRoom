@@ -25,6 +25,7 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
     typed.get('/:id', 
     {
         schema: {
+            tags: ['Bookings'],
             params: Type.Object({
                 id: Type.String({minLength: 1})
             }),
@@ -65,6 +66,7 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
 
     typed.patch('/:id',{
         schema: {
+            tags: ['Bookings'],
             params: Type.Object({
                 id: Type.String({ minLength: 1})
             }),

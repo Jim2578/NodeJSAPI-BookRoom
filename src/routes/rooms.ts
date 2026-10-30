@@ -5,9 +5,9 @@ import { Room, RoomBody, RoomType } from "../schema/room.ts"
 import { error } from "node:console";
 import { HttpError } from "../plugins/errors.ts";
 
-type Room = { id: number; name: string; capacity: number}
+//type Room = { id: number; name: string; capacity: number}
 
-let rooms: Room[] = [
+let rooms: RoomType[] = [
     {id: 1, name: 'A101', capacity: 30},
     {id: 2, name: 'A204', capacity: 12},
 ]
@@ -18,7 +18,8 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
     const typed = app.withTypeProvider<TypeBoxTypeProvider>()
 
     typed.get('/', {
-        schema: { 
+        schema: {
+            tags: ['Rooms'], 
             querystring: Type.Object({
                 minCapacity: Type.Optional(Type.Integer({minimum:1}))
             },
@@ -41,6 +42,7 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
     typed.get('/:id', 
     {
         schema: {
+            tags: ['Rooms'], 
             params: Type.Object({
                 id: Type.String({minLength: 1})
             }),
@@ -84,15 +86,36 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
     //     return reply.code(201).send(room)
     // })
 
-    app.delete<{Params: {id: string}}>('/:id', async(request, reply)=>{
-        const room = rooms.find((r)=>r.id === Number(request.params.id))
-        if (!room) throw new HttpError(404, 'Room not found')
-        rooms = rooms.filter((r)=>r.id !== Number(request.params.id))
-        return reply.code(200).send(rooms)
-    })
+    // app.delete<{Params: {id: string}}>('/:id', async(request, reply)=>{
+    //     const room = rooms.find((r)=>r.id === Number(request.params.id))
+    //     if (!room) throw new HttpError(404, 'Room not found')
+    //     rooms = rooms.filter((r)=>r.id !== Number(request.params.id))
+    //     return reply.code(200).send(rooms)
+    // })
+
+    typed.delete('/:id', {
+        schema: {
+            tags: ['Rooms'], 
+            params: Type.Object({
+                id: Type.String({ minLength: 1 })
+            }),
+            response: {
+                200: Type.Array(Room),
+                404: Type.Object({
+                    error: Type.String()
+                })
+            }
+        }
+    }, async (request, reply) => {
+        const room = rooms.find((r) => r.id === Number(request.params.id));
+        if (!room) throw new HttpError(404, 'Room not found');
+        rooms = rooms.filter((r) => r.id !== Number(request.params.id));
+        return reply.code(200).send(rooms);
+    });
 
     typed.patch('/:id',{
         schema: {
+            tags: ['Rooms'], 
             params: Type.Object({
                 id: Type.String({ minLength: 1})
             }),
