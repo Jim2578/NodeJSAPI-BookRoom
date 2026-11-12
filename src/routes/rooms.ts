@@ -67,7 +67,7 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
     //     if (!room) return reply.code(404).send({error: 'Room not found'})
     //     return room
     // })
-    typed.post('/', {schema: { body: RoomBody }}, async(request, reply)=>{
+    typed.post('/', {schema: { tags: ['Rooms'], body: RoomBody }}, async(request, reply)=>{
         const {capacity, name} = request.body
         const room: RoomType = {
             id: nextId,

@@ -5,9 +5,27 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
+  moduleFormat = "esm"
+  importFileExtension = "js"
 }
 
 datasource db {
   provider = "sqlite"
+}
+
+model Room {
+  id Int @id @default(autoincrement())
+  name String @unique
+  capacity Int
+  bookings Booking[]
+}
+
+model Booking{
+  id Int @id @default(autoincrement())
+  startsAt DateTime
+  endAt DateTime
+  userId Int
+  room Room @relation(fields: [roomId], references: [id])
+  roomId Int
 }

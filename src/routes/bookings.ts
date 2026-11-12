@@ -18,7 +18,13 @@ let nextId = 1
 export const bookingsRoutes: FastifyPluginAsync = async (app) => {
     const typed = app.withTypeProvider<TypeBoxTypeProvider>()
 
-    typed.get('/', {}, async (request, response) => {
+    typed.get('/', 
+        {
+            schema: {
+                tags: ['Bookings']
+            }
+        }, 
+    async (request, response) => {
         return bookings
     })
 
@@ -43,7 +49,7 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
         return booking
     })
 
-    typed.post('/', {schema: { body: BookingBody }}, async(request, reply)=>{
+    typed.post('/', {schema: { tags: ['Bookings'], body: BookingBody }}, async(request, reply)=>{
         const {endsAt, idRoom, idUser, startsAt} = request.body
         const booking: Booking = {
             id: nextId,
@@ -57,12 +63,32 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(201).send(booking)
     })
 
-    app.delete<{Params: {id: string}}>('/:id', async(request, reply)=>{
-        const booking = bookings.find((r)=>r.id === Number(request.params.id))
-        if (!booking) throw new HttpError(404, 'Booking not found')
-        bookings = bookings.filter((r)=>r.id !== Number(request.params.id))
-        return reply.code(200).send(booking)
-    })
+    typed.delete('/:id', {
+        schema: {
+            tags: ['Bookings'], 
+            params: Type.Object({
+                id: Type.String({ minLength: 1 })
+            }),
+            response: {
+                200: Type.Array(Booking),
+                404: Type.Object({
+                    error: Type.String()
+                })
+            }
+        }
+    }, async (request, reply) => {
+        const booking = bookings.find((r) => r.id === Number(request.params.id));
+        if (!booking) throw new HttpError(404, 'Booking not found');
+        bookings = bookings.filter((r) => r.id !== Number(request.params.id));
+        return reply.code(200).send(bookings);
+    });
+
+    // app.delete<{Params: {id: string}}>('/:id', async(request, reply)=>{
+    //     const booking = bookings.find((r)=>r.id === Number(request.params.id))
+    //     if (!booking) throw new HttpError(404, 'Booking not found')
+    //     bookings = bookings.filter((r)=>r.id !== Number(request.params.id))
+    //     return reply.code(200).send(booking)
+    // })
 
     typed.patch('/:id',{
         schema: {
