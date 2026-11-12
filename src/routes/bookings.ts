@@ -2,12 +2,13 @@ import { Type, TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { FastifyPluginAsync } from "fastify";
 import { Booking, BookingBody } from "../schema/booking.ts";
 import { HttpError } from "../plugins/errors.ts";
+import { start } from "node:repl";
 
 
 type Booking = { 
     id: number; 
-    idRoom: number; 
-    idUser: number; 
+    roomId: number; 
+    userId: number; 
     startsAt: string;
     endsAt: string;
 }
@@ -17,6 +18,7 @@ let nextId = 1
 
 export const bookingsRoutes: FastifyPluginAsync = async (app) => {
     const typed = app.withTypeProvider<TypeBoxTypeProvider>()
+    const {prisma} = app
 
     typed.get('/', 
         {
@@ -49,18 +51,32 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
         return booking
     })
 
-    typed.post('/', {schema: { tags: ['Bookings'], body: BookingBody }}, async(request, reply)=>{
-        const {endsAt, idRoom, idUser, startsAt} = request.body
-        const booking: Booking = {
-            id: nextId,
-            idRoom,
-            endsAt,
-            startsAt,
-            idUser
-        }
-        bookings.push(booking)
-        nextId++
-        return reply.code(201).send(booking)
+    typed.post('/', 
+        {
+            schema: { 
+                tags: ['Bookings'], 
+                body: BookingBody 
+            }
+        }, async(request, reply)=>{
+            const {roomId, startsAt, endsAt} =  request.body
+            if (new Date(endsAt) <= new Date(startsAt)) {
+                throw new HttpError(400, 'endsAt must be after startsAt')
+            }
+            const booking = await prisma.$transaction(async(tx)=>{
+                const conflict = await tx.booking.findFirst({
+                    where: {
+                        roomId,
+                        endsAt: { gt : startsAt},
+                        startsAt: {lt: endsAt}
+                    }
+                })
+                if (conflict) throw new HttpError(409, 'Conflit de date')
+                return await tx.booking.create({
+                    data: request.body
+                })
+            })
+            return reply.code(201).send(booking)
+
     })
 
     typed.delete('/:id', {
@@ -82,13 +98,6 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
         bookings = bookings.filter((r) => r.id !== Number(request.params.id));
         return reply.code(200).send(bookings);
     });
-
-    // app.delete<{Params: {id: string}}>('/:id', async(request, reply)=>{
-    //     const booking = bookings.find((r)=>r.id === Number(request.params.id))
-    //     if (!booking) throw new HttpError(404, 'Booking not found')
-    //     bookings = bookings.filter((r)=>r.id !== Number(request.params.id))
-    //     return reply.code(200).send(booking)
-    // })
 
     typed.patch('/:id',{
         schema: {
