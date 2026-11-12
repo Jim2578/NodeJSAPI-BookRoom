@@ -82,7 +82,7 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
             }
         }
     }, async (request, reply) => {
-        const room = await prisma.room.findUnique({
+        const room = await prisma.room.delete({
             where: {
                 id: Number(request.params.id)
             }

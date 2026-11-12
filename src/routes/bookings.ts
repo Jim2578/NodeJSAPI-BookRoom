@@ -27,7 +27,12 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
             }
         }, 
     async (request, response) => {
-        return bookings
+        return prisma.booking.findMany({
+            include: {
+                room: true,
+            },
+            orderBy: { startsAt: "asc"}
+        })
     })
 
     typed.get('/:id', 
@@ -45,10 +50,13 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
             }
         }
     }, async(request, reply)=> {
-        const {id} = request.params
-        const booking = bookings.find((r)=>r.id === Number(id))
-        if (!booking) throw new HttpError(404, 'Booking not found')
-        return booking
+        const booking = await prisma.booking.findUnique({
+            where: { 
+                id: Number(request.params.id),
+            }
+        });
+        if (!booking) throw new HttpError(404, 'Booking not found');
+        return booking;
     })
 
     typed.post('/', 
@@ -63,6 +71,12 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
                 throw new HttpError(400, 'endsAt must be after startsAt')
             }
             const booking = await prisma.$transaction(async(tx)=>{
+                const room = await tx.room.findUnique({
+                    where: {
+                        id: roomId
+                    }
+                })
+                if (!room) throw new HttpError(404, 'Salle inconnu')
                 const conflict = await tx.booking.findFirst({
                     where: {
                         roomId,
@@ -93,10 +107,12 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
             }
         }
     }, async (request, reply) => {
-        const booking = bookings.find((r) => r.id === Number(request.params.id));
+        const booking = await prisma.booking.delete({
+            where: {
+                id: Number(request.params.id)
+            }
+        })
         if (!booking) throw new HttpError(404, 'Booking not found');
-        bookings = bookings.filter((r) => r.id !== Number(request.params.id));
-        return reply.code(200).send(bookings);
     });
 
     typed.patch('/:id',{
@@ -114,12 +130,11 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
             }
         }
     }, async(request, reply) =>{
-        const {id} = request.params
-        const booking = bookings.find((r)=>r.id === Number(id))
-        if (!booking) {
-            throw new HttpError(404, 'Booking not found')
-        }
-        Object.assign(booking, request.body)
-        return booking
+        return await prisma.booking.update({
+            where :{
+                id: Number(request.params.id)
+            },
+            data: request.body
+        })
     })
 }
