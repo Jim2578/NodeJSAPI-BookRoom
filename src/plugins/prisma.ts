@@ -14,7 +14,7 @@ export default fp(async (app)=> {
 })
 
 declare module 'fastify' {
-    interface fastifyInstance {
+    interface FastifyInstance {
         prisma: PrismaClient;
     }
 }

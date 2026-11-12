@@ -4,6 +4,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { Room, RoomBody, RoomType } from "../schema/room.ts"
 import { error } from "node:console";
 import { HttpError } from "../plugins/errors.ts";
+import prisma from "../plugins/prisma.ts";
 
 //type Room = { id: number; name: string; capacity: number}
 
@@ -16,7 +17,7 @@ let nextId = 3
 export const roomsRoutes: FastifyPluginAsync = async (app) => {
 
     const typed = app.withTypeProvider<TypeBoxTypeProvider>()
-
+    const {prisma} = app
     typed.get('/', {
         schema: {
             tags: ['Rooms'], 
@@ -28,12 +29,19 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
             })
         }
     }, async (request, response) => {
-        const {minCapacity} = request.query
-        if (minCapacity) {
-            return rooms.filter((r=> r.capacity >= minCapacity))
-        }else{
-            return rooms
-        }
+        return prisma.room.findMany({
+            where:{
+                capacity: {
+                    gte : request.query.minCapacity
+                }
+            }
+        })
+        // const {minCapacity} = request.query
+        // if (minCapacity) {
+        //     return rooms.filter((r=> r.capacity >= minCapacity))
+        // }else{
+        //     return rooms
+        // }
     })
     // app.get('/', async => rooms)
 
