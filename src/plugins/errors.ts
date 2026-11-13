@@ -19,7 +19,6 @@ export default fp(async (app)=>{
         if (error.validation || (error.statusCode && error.statusCode < 500)){
             return reply.send(error)
         }
-        //console.log("LUUUUUUUUUUUUUUUUUUUUUUUUCAAS" + `${error}`);
         
         if(error instanceof PrismaClientKnownRequestError && error.code in prismaErrors ){
             const {statusCode, ...rest} = prismaErrors[error.code as keyof typeof prismaErrors]

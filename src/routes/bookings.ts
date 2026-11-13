@@ -2,19 +2,6 @@ import { Type, TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import { FastifyPluginAsync } from "fastify";
 import { Booking, BookingBody } from "../schema/booking.ts";
 import { HttpError } from "../plugins/errors.ts";
-import { start } from "node:repl";
-
-
-type Booking = { 
-    id: number; 
-    roomId: number; 
-    userId: number; 
-    startsAt: string;
-    endsAt: string;
-}
-
-let bookings: Booking[] = []
-let nextId = 1
 
 export const bookingsRoutes: FastifyPluginAsync = async (app) => {
     const typed = app.withTypeProvider<TypeBoxTypeProvider>()
@@ -129,12 +116,32 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
                 })
             }
         }
-    }, async(request, reply) =>{
-        return await prisma.booking.update({
-            where :{
-                id: Number(request.params.id)
-            },
-            data: request.body
-        })
-    })
-}
+    }, async (request) => {
+      return await prisma.$transaction(async (tx) => {
+        const booking = await tx.booking.findUnique({
+          where: { id: Number(request.params.id) },
+        });
+        if (!booking) throw new HttpError(404, "Booking not found");
+        const startsAt = new Date(request.body.startsAt ?? booking.startsAt);
+        const endsAt = new Date(request.body.endsAt ?? booking.endsAt);
+        const roomId = request.body.roomId ?? booking.roomId;
+        if (endsAt <= startsAt) {
+          throw new HttpError(400, "endsAt must be after startsAt");
+        }
+        const conflict = await tx.booking.findFirst({
+          where: {
+            roomId,
+            id: { not: booking.id },
+            startsAt: { lt: startsAt },
+            endsAt: { gt: endsAt },
+          },
+        });
+        if (conflict) throw new HttpError(409, "Créneau déjà réservé");
+ 
+        return await tx.booking.update({
+          where: { id: Number(request.params.id) },
+          data: request.body,
+        });
+      });
+    },
+)}
