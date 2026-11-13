@@ -2,7 +2,7 @@ import Fastify from 'fastify'
 import { roomsRoutes } from './routes/rooms.ts'
 import { bookingsRoutes } from './routes/bookings.ts'
 import logger from './plugins/logger.ts'
-import { error } from 'node:console'
+import error from './plugins/errors.ts'
 import swagger from './plugins/swagger.ts'
 import prisma from './plugins/prisma.ts'
 
