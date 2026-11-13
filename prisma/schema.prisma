@@ -24,8 +24,22 @@ model Room {
 model Booking{
   id Int @id @default(autoincrement())
   startsAt DateTime
-  endsAt DateTime
+  endAt DateTime
+  user User @relation(fields: [userId], references: [id])
   userId Int
   room Room @relation(fields: [roomId], references: [id])
   roomId Int
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+model User{
+  id Int @id @default(autoincrement())
+  email String @unique
+  passwordHash String
+  role Role @default(STUDENT)
+  bookings Booking[]
 }
