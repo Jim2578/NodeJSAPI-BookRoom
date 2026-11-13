@@ -4,7 +4,21 @@ import fp from 'fastify-plugin'
 
 export default fp(async (app)=>{
     await app.register(swagger,{
-        openapi: { info: {title: 'RoomBook', version: '1.0.0'}},
+        openapi: { 
+                info: {
+                title: 'RoomBook', 
+                version: '1.0.0'
+            },
+            components:{
+                securitySchemes: {
+                    touken : {
+                        type: 'http',
+                        scheme: 'bearer',
+                        bearerFormat: 'JWT'
+                    }
+                }
+            }
+        },
     })
     await app.register(swaggerUi, { routePrefix: '/docs'})
 })

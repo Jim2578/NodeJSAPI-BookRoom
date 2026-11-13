@@ -4,6 +4,7 @@ import { Booking, BookingBody } from "../schema/booking.ts";
 import { HttpError } from "../plugins/errors.ts";
 
 export const bookingsRoutes: FastifyPluginAsync = async (app) => {
+    app.addHook("onRequest", app.authenticate)
     const typed = app.withTypeProvider<TypeBoxTypeProvider>()
     const {prisma} = app
 
@@ -73,7 +74,10 @@ export const bookingsRoutes: FastifyPluginAsync = async (app) => {
                 })
                 if (conflict) throw new HttpError(409, 'Conflit de date')
                 return await tx.booking.create({
-                    data: request.body
+                    data: {
+                        ...request.body,
+                        userId: Number(request.user.sub)
+                    }
                 })
             })
             return reply.code(201).send(booking)

@@ -2,7 +2,6 @@ import { Type, Static } from "@fastify/type-provider-typebox";
 
 export const BookingBody = Type.Object({
     roomId: Type.Integer({minimum: 1}),
-    userId: Type.Integer({minimum: 1}),
     startsAt: Type.Unsafe<Date>({
         type: "string",
         format:"date-time"

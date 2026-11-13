@@ -6,12 +6,6 @@ import { error } from "node:console";
 import { HttpError } from "../plugins/errors.ts";
 import prisma from "../plugins/prisma.ts";
 
-let rooms: RoomType[] = [
-    {id: 1, name: 'A101', capacity: 30},
-    {id: 2, name: 'A204', capacity: 12},
-]
-let nextId = 3
-
 export const roomsRoutes: FastifyPluginAsync = async (app) => {
 
     const typed = app.withTypeProvider<TypeBoxTypeProvider>()
@@ -19,12 +13,13 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
     typed.get('/', {
         schema: {
             tags: ['Rooms'], 
+            security: [{ touken: [] }],
             querystring: Type.Object({
                 minCapacity: Type.Optional(Type.Integer({minimum:1}))
             },
             {
                 additionalProperties: false
-            })
+            }),
         }
     }, async (request, response) => {
         return prisma.room.findMany({
@@ -50,7 +45,8 @@ export const roomsRoutes: FastifyPluginAsync = async (app) => {
                     error: Type.String()
                 })
             }
-        }
+        },
+        onRequest: [app.requireRole("ADMIN")]
     }, async(request, reply)=> {
         const room = await prisma.room.findUnique({
             where: { 
